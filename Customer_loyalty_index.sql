@@ -4,17 +4,23 @@ SELECT * FROM Customer;
 
 -- Calculating the Customer Loyalty Index
 
--- Step 1: Calculate the amount_purchase Index per Customer. This can be done by dividing highest purchase amount per customer by purchase amoutn per customer.alter
+-- Step 1: Calculated the amount_purchase Index per Customer. This can be done by dividing highest purchase amount per customer by purchase amouny per customer.
 
 SELECT 
-  first_name, 
-  last_name, 
-  ROUND((total_amount)/221.55,2) AS amount_purchase_index
-FROM amount_prcustomer
-ORDER BY 
-	 Percantage_of_highest DESC;
+	first_name, 
+	last_name, 
+    SUM(amount) AS Total_Purchase,
+    ROUND((SUM(amount)/221.55)*10,0) AS amount_spent_index
+FROM customer
+	LEFT JOIN payment
+    ON customer.customer_id = payment.customer_id
+GROUP BY 
+	first_name, 
+    last_name
+ORDER BY
+	Total_Purchase DESC;
 
--- Step 2: Calculate Duration of Customer History
+-- Step 2: Calculated the Duration of Customer History
 
 CREATE TEMPORARY TABLE Customer_history
 SELECT 
@@ -23,17 +29,17 @@ SELECT
     DATEDIFF(last_update, create_date) AS customer_days
 FROM customer;
 
--- Step 2.1 Calculate the Customer history Index
+SELECT * FROM Customer_history
+ORDER BY customer_days DESC;
+
+-- Step 2.1 Calculated the Customer history Index
 
 SELECT 
   first_name, 
   last_name, 
-  ROUND((customer_days)/835,2) AS customer_history_Index
+  ROUND((customer_days)/835,2)*10 AS customer_history_Index
 FROM Customer_history
-ORDER BY 
-	prop DESC;
-
-SELECT * FROM Customer;
+ORDER BY customer_history_index DESC;
 
 # Step 3: Calculating the Customer Loyalty Index
 
@@ -59,7 +65,9 @@ GROUP BY
     customer.customer_id
 ORDER BY customer_loyalty_index DESC;
 
-#Step 4: Performing Customer Segmentation using the Customer Loyalty Index
+SELECT * FROM Customer_loyalty;
+
+#Step 4: Performed Customer Segmentation using the Customer Loyalty Index
 
 SELECT
 	first_name,
@@ -73,8 +81,8 @@ SELECT
     desire_torepurchase,
     customer_loyalty_index,
 	CASE 
-		WHEN customer_loyalty_index > 7.00 THEN "Loyal Customer"
-        WHEN customer_history_index < 2.00 THEN "New Customer"
+		WHEN customer_history_index > 5.00 AND customer_loyalty_index > 7.00 THEN "Loyal Customer"
+        WHEN customer_history_index < 2.00 AND customer_loyalty_index < 7 THEN "New Customer"
 		WHEN customer_history_index > 3.00 AND amount_spent_index < 4.00 THEN "Unprofitable Customer"
 		WHEN customer_loyalty_index BETWEEN 5.00 AND 6.99 THEN "Repeat Customer"
         ELSE 'Captive Customer'
